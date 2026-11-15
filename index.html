@@ -155,7 +155,7 @@
     </div>
   </div>
 </div>
-<script>window.STATIC = true;</script>
+<script>window.STATIC = true; window.DATA_URL = "https://raw.githubusercontent.com/LilAdelaide/aus200-gex/data/data.json";</script>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -517,7 +517,7 @@ function tick() {
   if (state && state.ts) {
     const age = now - state.ts, ageT = age >= 120 ? Math.round(age / 60) + ' min old' : Math.round(age) + 's old';
     if (window.SNAP) $('tData').textContent = 'snapshot ' + ageT;
-    else if (STATIC) $('tData').innerHTML = 'data ' + ageT + ' | page checks in <b>' + fmtT(Math.max(0, 30 - (now - lastPollAt))) + '</b>';
+    else if (STATIC) $('tData').innerHTML = 'data ' + ageT + ' | page checks in <b>' + fmtT(Math.max(0, 15 - (now - lastPollAt))) + '</b>';
     else $('tData').innerHTML = 'data ' + ageT + ' | <b>live</b>, every 1s';
   }
 }
@@ -545,7 +545,7 @@ function render() {
   else {
     const age = Math.max(0, Date.now() / 1000 - state.ts);
     const ageTxt = age > 120 ? Math.round(age / 60) + ' min ago' : age.toFixed(0) + 's ago';
-    chip('cAge', 'data ' + ageTxt + ' | stocks live ' + state.stock_prices_live + '/' + state.stocks.length, age > (STATIC ? 1500 : 15) ? 'bad' : 'ok');
+    chip('cAge', 'data ' + ageTxt + ' | stocks live ' + state.stock_prices_live + '/' + state.stocks.length, age > (STATIC ? 300 : 15) ? 'bad' : 'ok');
   }
   if (document.activeElement !== $('inOff')) $('inOff').value = (STATIC ? off : (state.offset || 0)).toFixed(1);
 
@@ -580,7 +580,11 @@ async function poll() {
   try {
     if (STATIC) {
       if (window.DATA) base = JSON.parse(JSON.stringify(window.DATA));
-      else base = await (await fetch('data.json?t=' + Date.now(), { cache:'no-store' })).json();
+      else {
+        const bust = '?t=' + Date.now();
+        try { base = await (await fetch((window.DATA_URL || 'data.json') + bust, { cache:'no-store' })).json(); }
+        catch (e) { base = await (await fetch('data.json' + bust, { cache:'no-store' })).json(); }
+      }
       cache = base.candles || {};
       adjust(); loadCandles(!curCs.length);
     } else {
@@ -1026,6 +1030,6 @@ new ResizeObserver(sizeChart).observe($('chart'));
 applyTheme(); applyChartLook(); makeSeries(); buildSet(); buildTfs(); layout();
 if (S.intro) { const el = $('intro'); el.addEventListener('animationend', (e) => { if (e.target === el) el.remove(); }); setTimeout(() => { if (el.parentNode) el.remove(); }, 3500); }
 else $('intro').remove();
-setInterval(poll, STATIC ? 30000 : 1000); if (!STATIC) setInterval(() => loadCandles(false), 5000); setInterval(draw, 100);
+setInterval(poll, STATIC ? 15000 : 1000); if (!STATIC) setInterval(() => loadCandles(false), 5000); setInterval(draw, 100);
 if (!STATIC) loadCandles(true); poll();
 </script></body></html>
